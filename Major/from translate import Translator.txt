@@ -1,0 +1,136 @@
+from translate import Translator
+from gtts import gTTS
+import os 
+import torch
+import json 
+from fpdf import FPDF
+import datetime
+import speech_recognition as sr
+import pyttsx3
+
+
+from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
+
+
+
+path = 'test.txt'
+
+def SpeakText(command):
+     
+    # Initialize the engine
+    engine = pyttsx3.init()
+    engine.say(command)
+    engine.runAndWait()
+
+
+def speech_to_text():
+    r = sr.Recognizer()
+    while(1):
+
+        try:
+             with sr.Microphone() as source2:
+                r.adjust_for_ambient_noise(source2, duration=0.2)
+                    
+                audio2 = r.listen(source2)
+                    
+                MyText = r.recognize_google(audio2)
+                MyText = MyText.lower()
+
+                print("Did you say ",MyText)
+                SpeakText(MyText)
+                    
+        except sr.RequestError as e:
+            print("Could not request results; {0}".format(e))
+         
+        except sr.UnknownValueError:
+            print("unknown error occurred")
+
+ 
+
+
+
+
+
+def extract_text(path):
+    str_input = ""
+    with open(path) as f:
+        contents = f.read()
+        str_input += contents
+
+    return str_input
+
+def convert_to_pdf(summ_text):
+    pdf = FPDF
+    pdf.add_page(2)
+    pdf.set_font("Arial" , size = 15)
+    pdf.cell(200 , 10 , txt = "Meet Summary" , ln = 1, align = 'C') 
+    pdf.cell(200 , 10 , text = datetime.datetime.now() , ln = 2 , align = 'C' )
+    pdf.cell(200 , 10 , text = summ_text , ln = 3, align = 'L' )
+    pdf.output(str(datetime.datetime.now())+".pdf")
+
+
+
+
+def get_summary(str_input ):
+  
+    model = T5ForConditionalGeneration.from_pretrained('t5-small')
+    tokenizer = T5Tokenizer.from_pretrained('t5-small')
+    device = torch.device('cpu')
+
+
+
+    preprocess_text = str_input.strip().replace("\n","")
+    t5_prepared_Text = "summarize: "+preprocess_text
+    print ("original text preprocessed: \n", preprocess_text)
+
+    tokenized_text = tokenizer.encode(t5_prepared_Text, return_tensors="pt").to(device)
+
+
+# summmarize 
+    summary_ids = model.generate(tokenized_text,
+                                    num_beams=4,
+                                    no_repeat_ngram_size=3,
+                                    min_length=30,
+                                    max_length=2000,
+                                    early_stopping=True)
+
+    output = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+    return(output)
+
+
+def translate_text(text , lang):
+    translator= Translator(to_lang=lang)
+    translation = translator.translate(text)
+    print(translation)
+
+def convert_text_to_speech(text , aud_name):
+    language = "en"
+    myobj = gTTS(text , lang = language , slow = False , tld = 'us')
+    myobj.save(aud_name+'.mp3')
+    os.system(aud_name+'.mp3')
+
+
+language_sel = {
+
+    'Spanish' : 'es',
+    'Portugese' : 'pt',
+    'French' : 'fr',
+    
+ }
+
+
+
+
+text = "This is working good i guess"
+selected_lang = "French"
+lang = language_sel[selected_lang]
+aud_name = "test"
+
+# convert_text_to_speech(text , aud_name)
+
+# original_text = extract_text(path)
+# summ_text = get_summary(original_text)
+# convert_to_pdf(summ_text)
+
+# speech_to_text()
