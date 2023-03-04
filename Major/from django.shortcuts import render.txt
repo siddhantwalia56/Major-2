@@ -1,5 +1,3 @@
-from django.shortcuts import render
-from django.http import HttpResponse
 import pypyodbc as odbc
 
 # Create your views here.
@@ -22,7 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
-db = {"gilad@oncehub.com":"Spanish", 
+db = {"siddhantwalia56@gmail.com":"Spanish", 
 "aayush.deshmukh@oncehub.com": "English", 
 "anirudh.jain@oncehub.com": "Portuguese", 
 "achint.trivedi@oncehub.com":"English",
@@ -37,14 +35,11 @@ language_sel = {
         "French":"fr"
     }
 
-def welcome(request):
-    return None
 
 
 
-def index(request):
-    file_path = str(request.POST["file_path"])
-    participants = str(request.POST["participants"]).split(",")
+def index(file_path, participants):
+   
     with open(file_path, "r") as file:
         file_data = file.read()
     summary = get_summary(file_data)
@@ -55,7 +50,7 @@ def index(request):
 
         send_mail(file_path, participant)
         print("Mail sent to", participant)
-    return HttpResponse("Summary sent")
+    return 'Summary Send'
 
 
 
@@ -146,3 +141,11 @@ def send_mail(file_path, receiver):
 
         smtp.login(Sender, Sender_pass)
         smtp.sendmail(Sender, Receivers, text_msg)
+        
+ def main():
+    fpath=input('Enter the path of the file')
+    participants=input('Enter the email id of the participants (space as a seprator)').split()
+    index(fpath, participants)
+    
+main()
+    
